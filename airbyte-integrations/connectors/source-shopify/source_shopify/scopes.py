@@ -74,6 +74,7 @@ SCOPES_MAPPING: Mapping[str, set[str]] = {
     "MetafieldBlogs": ("read_online_store_pages",),
     # SCOPE: read_shipping
     "Countries": ("read_shipping",),
+    "GiftCards": ("read_gift_cards",),
 }
 
 ALWAYS_PERMITTED_STREAMS: List[str] = [

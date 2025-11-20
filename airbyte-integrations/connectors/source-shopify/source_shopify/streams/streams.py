@@ -440,3 +440,6 @@ class Countries(HttpSubStream, FullRefreshShopifyGraphQlBulkStream):
 
         country["shop_url"] = self.config["shop"]
         return country
+
+class GiftCards(IncrementalShopifyStream):
+    data_field = "gift_cards"
