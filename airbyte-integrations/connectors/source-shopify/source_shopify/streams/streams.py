@@ -32,6 +32,7 @@ from source_shopify.shopify_graphql.bulk.query import (
     ProductVariant,
     ProfileLocationGroups,
     Transaction,
+    Return,
 )
 from source_shopify.utils import LimitReducingErrorHandler, ShopifyNonRetryableErrors
 
@@ -443,3 +444,24 @@ class Countries(HttpSubStream, FullRefreshShopifyGraphQlBulkStream):
 
 class GiftCards(IncrementalShopifyStream):
     data_field = "gift_cards"
+
+class Returns(IncrementalShopifyGraphQlBulkStream):
+    bulk_query: Return = Return
+    cursor_field = "created_at"
+    api_version = "2025-07"
+
+    @property
+    def name(self) -> str:
+        # override default name. This stream is essentially the same as `Transactions` stream, but it's using GraphQL API, which does not include the user_id field
+        return "returns"
+
+    def get_json_schema(self) -> Mapping[str, Any]:
+        """
+        This stream has the same schema as `Transactions` stream, except of:
+         - fields: [ `device_id, source_name, user_id, location_id` ]
+
+           Specifically:
+            - `user_id` field requires `Shopify Plus` / be authorised via `Financialy Embedded App`.
+            - additional `read_users` scope is required https://shopify.dev/docs/api/usage/access-scopes#authenticated-access-scopes
+        """
+        return ResourceSchemaLoader(package_name_from_class(Return)).get_schema("returns")

@@ -63,7 +63,8 @@ from .streams.streams import (
     TenderTransactions,
     Transactions,
     TransactionsGraphql,
-    GiftCards
+    GiftCards,
+    Returns,
 )
 
 
@@ -220,6 +221,7 @@ class SourceShopify(AbstractSource):
             CustomerAddress(config),
             Countries(config=config, parent=ProfileLocationGroups(config)),
             GiftCards(config),
+            Returns(config),
         ]
 
         return [

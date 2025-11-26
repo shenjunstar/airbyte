@@ -1,0 +1,141 @@
+{
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "id": {
+      "description": "The ID of the return.",
+      "type": ["null", "integer"]
+    },
+    "order_id": {
+      "description": "The ID of the associated order.",
+      "type": ["null", "integer"]
+    },
+    "name": {
+      "description": "The name of the return.",
+      "type": ["null", "string"]
+    },
+    "created_at": {
+      "description": "The date and time when the return was created.",
+      "type": ["null", "string"],
+      "format": "date-time"
+    },
+    "decline": {
+      "description": "Additional information about the declined return.",
+      "type": ["null", "object"],
+      "properties": {
+        "note" : {
+          "description": "The notification message sent to the customer about their declined return request. Maximum length: 500 characters.",
+          "type": ["null", "string"]
+        },
+        "reason" : {
+          "description": "The reason the customer's return request was declined.",
+          "type": ["null", "string"]
+        }
+      }
+    },
+    "return_shipping_fees": {
+      "description": "The return shipping fees for the return.",
+      "type": ["null", "array"],
+      "items": {
+        "type": ["null", "object"],
+        "properties": {
+          "id": {
+            "type": ["null", "string"],
+            "description": "The unique ID for the Fee."
+          },
+          "amount_set": {
+            "type": ["null", "object"],
+            "description": "The unique ID for the Fee.",
+            "properties": {
+              "shop_money": {
+                "type": ["null", "object"],
+                "description": "The unique ID for the Fee.",
+                "properties": {
+                  "amount": {
+                    "type": ["null", "number"],
+                    "description": "A monetary value in decimal format"
+                  },
+                  "currency": {
+                    "type": ["null", "string"],
+                    "description": "The three-letter currency code that represents a world currency used in a store. "
+                  }
+                }
+              },
+              "presentment_money": {
+                "type": ["null", "object"],
+                "description": "The unique ID for the Fee.",
+                "properties": {
+                  "amount": {
+                    "type": ["null", "number"],
+                    "description": "A monetary value in decimal format"
+                  },
+                  "currency": {
+                    "type": ["null", "string"],
+                    "description": "The three-letter currency code that represents a world currency used in a store. "
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "return_line_items": {
+      "description": "The return shipping fees for the return.",
+      "type": ["null", "array"],
+      "items": {
+        "type": ["null", "object"],
+        "properties": {
+          "id": {
+            "type": ["null", "integer"],
+            "description": "The unique ID for the return line item."
+          },
+          "customer_note": {
+            "type": ["null", "string"],
+            "description": "A note from the customer that describes the item to be returned. Maximum length: 300 characters."
+          },
+          "quantity": {
+            "type": ["null", "integer"],
+            "description": "The quantity being returned."
+          },
+          "refundable_quantity": {
+            "type": ["null", "integer"],
+            "description": "The quantity that can be refunded."
+          },
+          "refunded_quantity": {
+            "type": ["null", "integer"],
+            "description": "The quantity that was refunded."
+          },
+          "return_reason": {
+            "type": ["null", "string"],
+            "description": "The reason for returning the item."
+          },
+          "return_reason_note": {
+            "type": ["null", "string"],
+            "description": "Additional information about the reason for the return. Maximum length: 255 characters."
+          },
+          "line_item_id": {
+            "type": ["null", "integer"],
+            "description": "Order line item id."
+          },
+          "fulfillment_line_item_id": {
+            "type": ["null", "integer"],
+            "description": "Fulfillment line item id."
+          }
+        }
+      }
+    },
+    "status": {
+      "type": ["null", "string"],
+      "description": "The status of the return."
+    },
+    "total_quantity": {
+      "type": ["null", "integer"],
+      "description": "The sum of all return line item quantities for the return."
+    },
+    "shop_url": {
+      "type": ["null", "string"],
+      "description": "URL of the shop where the return occurred"
+    }
+  }
+}

@@ -3373,3 +3373,191 @@ class DeliveryProfile(DeliveryZoneList):
             ),
         ]
         return query_nodes
+
+
+class Return(ShopifyBulkQuery):
+    """
+    Output example to BULK query `returns` from `orders` with `filter query` by `updated_at` sorted `ASC`:
+        {
+            orders(query: "updated_at:>='2021-05-23T00:00:00+00:00' AND updated_at:<'2021-12-22T00:00:00+00:00'", sortKey:UPDATED_AT) {
+                edges {
+                    node {
+                        __typename
+                        id
+                        createdAt
+                        updatedAt
+                        returns {
+                            edges {
+                                node {
+                                    __typename
+                                    id
+                                    name
+                                    createdAt
+                                    decline {
+                                        note
+                                        reason
+                                    }
+                                    returnShippingFees {
+                                        id
+                                        amount_set: amountSet {
+                                            shop_money: shopMoney {
+                                                amount
+                                                currency: currencyCode
+                                            }
+                                            presentment_money: presentmentMoney {
+                                                amount
+                                                currency: currencyCode
+                                            }
+                                        }
+                                    }
+                                    returnLineItems {
+                                        edges {
+                                            node {
+                                                ... on ReturnLineItem {
+                                                    __typename
+                                                    id
+                                                    customer_note: customerNote
+                                                    quantity
+                                                    refundable_quantity: refundableQuantity
+                                                    refunded_quantity: refundedQuantity
+                                                    return_reason: returnReason
+                                                    return_reason_note: returnReasonNote
+                                                    fulfillmentLineItem {
+                                                        id
+                                                        lineItem {
+                                                            id
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                    status
+                                    totalQuantity
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    """
+    query_name = "orders"
+    sort_key = "UPDATED_AT"
+
+    return_line_items_fields: List[Field] = [
+        Field(
+            name="edges",
+            fields=[
+                Field(
+                    name="node",
+                    fields=[
+                        InlineFragment(
+                            type="ReturnLineItem",
+                            fields=[
+                                "__typename",
+                                "id",
+                                Field(name="customerNote", alias="customer_note"),
+                                "quantity",
+                                Field(name="refundableQuantity", alias="refundable_quantity"),
+                                Field(name="refundedQuantity", alias="refunded_quantity"),
+                                Field(name="returnReason", alias="return_reason"),
+                                Field(name="returnReasonNote", alias="return_reason_note"),
+                                Field(name="fulfillmentLineItem", fields=["id", Field(name="lineItem", fields=["id"])])
+                            ]
+                        )
+                    ],
+                )
+            ],
+        )
+    ]
+
+    amount_fields: List[Field] = [
+        "amount",
+        Field(name="currencyCode", alias="currency"),
+    ]
+
+    money_fields: List[Field] = [
+        Field(name="shopMoney", alias="shop_money", fields=amount_fields),
+        Field(name="presentmentMoney", alias="presentment_money", fields=amount_fields)
+    ]
+
+    returns_fields: List[Field] = [
+        Field(
+            name="edges",
+            fields=[
+                Field(
+                    name="node",
+                    fields=[
+                        "__typename",
+                        "id",
+                        "name",
+                        "createdAt",
+                        Field(name="decline", fields=["note","reason"]),
+                        Field(name="returnShippingFees", fields=["id", Field(name="amountSet", alias="amount_set", fields=money_fields)]),
+                        Field(name="returnLineItems", fields=return_line_items_fields),
+                        "status",
+                        "totalQuantity",
+                    ],
+                )
+            ],
+        )
+    ]
+
+    query_nodes: List[Field] = [
+        "__typename",
+        "id",
+        "createdAt",
+        "updatedAt",
+        Field(name="returns", fields=returns_fields),
+    ]
+
+    record_composition = {
+        "new_record": "Return",
+        "record_components": [
+            "ReturnLineItem"
+        ]
+    }
+
+    def _process_component(self, entity: List[dict]) -> List[dict]:
+        for item in entity:
+            # remove the `__parentId` from the object
+            if BULK_PARENT_KEY in item:
+                item.pop(BULK_PARENT_KEY)
+            # resolve the id from string
+            item["id"] = self.tools.resolve_str_id(item.get("id"))
+        return entity
+
+    def _process_amount_money(self, amount: MutableMapping[str, Any]) -> MutableMapping[str, Any]:
+        shop_money = amount.get("shop_money", {})
+        presentment_money = amount.get("presentment_money", {})
+        # cast the `amount` for each of the min/max object
+        if shop_money:
+            amount["shop_money"]["amount"] = float(shop_money.get("amount"))
+        if presentment_money:
+            amount["presentment_money"]["amount"] = float(presentment_money.get("amount"))
+
+        return amount
+
+    def record_process_components(self, record: MutableMapping[str, Any]) -> Iterable[MutableMapping[str, Any]]:
+        record["order_id"] = self.tools.resolve_str_id(record[BULK_PARENT_KEY])
+        record.pop(BULK_PARENT_KEY)
+        record["created_at"] = self.tools.from_iso8601_to_rfc3339(record, "createdAt")
+        record_components = record.get("record_components", {})
+        if record_components:
+            return_line_items = self._process_component(record_components.get("ReturnLineItem", []))
+            for item in return_line_items:
+                fulfillment_line_item = item.get("fulfillmentLineItem")
+                item["fulfillment_line_item_id"] = self.tools.resolve_str_id(fulfillment_line_item.get("id"))
+                if fulfillment_line_item:
+                    fulfillment_line_item = fulfillment_line_item.get("lineItem")
+                    if fulfillment_line_item:
+                        item["line_item_id"] = self.tools.resolve_str_id(fulfillment_line_item.get("id"))
+                item.pop("fulfillmentLineItem")
+            record["return_line_items"] = return_line_items
+            record.pop("record_components")
+
+        return_shipping_fees = record.get("return_shipping_fees", [])
+        for item in return_shipping_fees:
+            self._process_amount_money(item)
+        yield record

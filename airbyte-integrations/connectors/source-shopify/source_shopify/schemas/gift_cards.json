@@ -60,6 +60,10 @@
       "description": "The date and time when the gift card was last modified.",
       "type": ["null", "string"],
       "format": "date-time"
+    },
+    "shop_url": {
+      "description": "URL of the shop associated with the gift card.",
+      "type": ["null", "string"]
     }
   }
 }
