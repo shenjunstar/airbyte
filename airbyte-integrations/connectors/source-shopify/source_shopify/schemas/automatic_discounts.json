@@ -1,0 +1,252 @@
+{
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "id": {
+      "description": "The ID of the discounts.",
+      "type": ["null", "integer"]
+    },
+    "admin_graphql_api_id": {
+      "description": "The unique identifier of the article in the GraphQL Admin API.",
+      "type": ["null", "string"]
+    },
+    "type": {
+      "description": "The type of the automatic discount.",
+      "type": ["null", "string"]
+    },
+    "created_at": {
+      "description": "The date and time when the discount was created",
+      "type": ["null", "string"],
+      "format": "date-time"
+    },
+    "updated_at": {
+      "description": "The date and time when the discount was last updated",
+      "type": ["null", "string"],
+      "format": "date-time"
+    },
+    "async_usage_count": {
+      "description": "The number of times that the discount has been used. For example, if a \"Buy 3, Get 1 Free\" t-shirt discount is automatically applied in 200 transactions, then the discount has been used 200 times. This value is updated asynchronously. As a result, it might be lower than the actual usage count until the asynchronous process is completed.",
+      "type": ["null", "integer"]
+    },
+    "combines_with": {
+      "description": "The discount classes that you can use in combination with Shopify discount types.",
+      "type": ["null", "object"],
+      "properties": {
+        "order_discounts": {
+          "description": "Whether the discount combines with the order discount class.",
+          "type": ["null", "boolean"]
+        },
+        "product_discounts": {
+          "description": "Whether the discount combines with the product discount class.",
+          "type": ["null", "boolean"]
+        },
+        "shipping_discounts": {
+          "description": "Whether the discount combines with the shipping discount class.",
+          "type": ["null", "boolean"]
+        }
+      }
+    },
+    "discount_classes": {
+      "description": "The discount class that's used to control how discounts can be combined.",
+      "type": ["null", "array"],
+      "items": {
+        "type": ["null", "string"]
+      }
+    },
+    "ends_at": {
+      "description": "The date and time when the discount expires and is no longer available to customers. For discounts without a fixed expiration date, specify null.",
+      "type": ["null", "string"],
+      "format": "date-time"
+    },
+    "starts_at": {
+      "description": "The date and time when the discount becomes active and is available to customers.",
+      "type": ["null", "string"],
+      "format": "date-time"
+    },
+    "status": {
+      "description": "The status of the discount that describes its availability, expiration, or pending activation.",
+      "type": ["null", "string"]
+    },
+    "title": {
+      "description": "The discount's name that displays to merchants in the Shopify admin and to customers.",
+      "type": ["null", "string"]
+    },
+    "shop_url": {
+      "description": "URL of the customer's associated shop.",
+      "type": ["null", "string"]
+    },
+    "app_discount_type": {
+      "description": "The details about the app extension that's providing the discount type. This information includes the app extension's name and client ID, App Bridge configuration, discount class, function ID, and other metadata about the discount type, including the discount type's name and description.",
+      "type": ["null", "object"],
+      "properties": {
+        "app_id" : {
+          "description": "The ID of the app.",
+          "type": ["null", "integer"]
+        },
+        "app_bridge": {
+          "description": "The App Bridge configuration for the discount type.",
+          "type": ["null", "object"],
+          "properties": {
+            "create_path" : {
+              "description": "The relative path for creating a customization.",
+              "type": ["null", "string"]
+            },
+            "details_path" : {
+              "description": "The relative path for viewing a customization.",
+              "type": ["null", "string"]
+            }
+          }
+        },
+        "app_key" : {
+          "description": "The client ID of the app extension that's providing the discount type.",
+          "type": ["null", "string"]
+        },
+        "description" : {
+          "description": "A description of the discount type provided by the app extension.",
+          "type": ["null", "string"]
+        },
+        "discount_classes" : {
+          "type": ["null", "array"],
+          "items": {
+            "type": ["null", "string"]
+          }
+        },
+        "function_id" : {
+          "description": "The function ID associated with the app extension providing the discount type.",
+          "type": ["null", "string"]
+        },
+        "title" : {
+          "description": "The name of the discount type that the app extension is providing.",
+          "type": ["null", "string"]
+        }
+      }
+    },
+    "applies_on_subscription": {
+      "description": "Whether the discount applies on one-time purchases.",
+      "type": ["null", "boolean"]
+    },
+    "applies_on_one_time_purchase": {
+      "description": "Whether the discount applies on subscription items. Subscriptions enable customers to purchase products on a recurring basis.",
+      "type": ["null", "boolean"]
+    },
+    "discount_id" : {
+      "description": "The globally-unique ID for the discount.",
+      "type": ["null", "string"]
+    },
+    "recurring_cycle_limit": {
+      "description": "The number of billing cycles for which the discount can be applied, which is useful for subscription-based discounts. For example, if you set this field to 3, then the discount only applies to the first three billing cycles of a subscription. If you specify 0, then the discount applies indefinitely.",
+      "type": ["null", "integer"]
+    },
+    "minimum_requirement": {
+      "description": "The minimum subtotal or quantity of items that are required for the discount to be applied.",
+      "type": ["null", "object"],
+      "properties": {
+        "greater_than_or_equal_to_subtotal": {
+          "description": "The minimum subtotal that's required for the discount to be applied.",
+          "type": ["null", "object"],
+          "properties": {
+            "amount": {
+              "type": ["null", "number"]
+            },
+            "currency": {
+              "type": ["null", "string"]
+            }
+          }
+        },
+        "greater_than_or_equal_to_quantity": {
+          "description": "The minimum quantity of items that's required for the discount to be applied.",
+          "type": ["null", "integer"]
+        }
+      }
+    },
+    "short_summary": {
+      "type": ["null", "string"],
+      "description": "An abbreviated version of the discount summary field."
+    },
+    "summary": {
+      "type": ["null", "string"],
+      "description": "A detailed explanation of what the discount is, who can use it, when and where it applies, and any associated rules or limitations."
+    },
+    "customer_buys": {
+      "description": "The items eligible for the discount and the required quantity of each to receive the discount.",
+      "type": ["null", "object"],
+      "properties": {
+        "is_one_time_purchase": {
+          "description": "If the discount is applicable when a customer buys a one-time purchase.",
+          "type": ["null", "boolean"]
+        },
+        "is_subscription": {
+          "description": "If the discount is applicable when a customer buys a subscription purchase.",
+          "type": ["null", "boolean"]
+        }
+      }
+    },
+    "customer_gets": {
+      "description": "The items in the order that qualify for the discount, their quantities, and the total value of the discount.",
+      "type": ["null", "object"],
+      "properties": {
+        "applies_on_subscription": {
+          "description": "Whether the discount applies on regular one-time-purchase items.",
+          "type": ["null", "boolean"]
+        },
+        "applies_on_one_time_purchase": {
+          "description": "Whether the discount applies on subscription items. Subscriptions enable customers to purchase products on a recurring basis.",
+          "type": ["null", "boolean"]
+        }
+      }
+    },
+    "uses_per_order_limit": {
+      "description": "The maximum number of times that the discount can be applied to an order.",
+      "type": ["null", "integer"]
+    },
+    "destination_selection": {
+      "description": "The countries that qualify for the discount. You can define a list of countries or specify all countries to be eligible for the discount.",
+      "type": ["null", "object"],
+      "properties": {
+        "countries": {
+          "description": "The codes for the countries where the discount can be applied.",
+          "type": ["null", "array"],
+          "items": {
+            "type": ["null", "string"]
+          }
+        },
+        "include_rest_of_world": {
+          "description": "Whether the discount is applicable to countries that haven't been defined in the shop's shipping zones.",
+          "type": ["null", "boolean"]
+        },
+        "all_countries": {
+          "description": "Whether the discount can be applied to all countries as shipping destination. This value is always true.",
+          "type": ["null", "boolean"]
+        }
+      }
+    },
+    "has_timeline_comment": {
+      "description": "Whether there are timeline comments associated with the discount.",
+      "type": ["null", "boolean"]
+    },
+    "maximum_shipping_price": {
+      "description": "The maximum shipping price amount accepted to qualify for the discount.",
+      "type": ["null", "object"],
+      "properties": {
+        "amount": {
+          "type": ["null", "number"]
+        },
+        "currency": {
+          "type": ["null", "string"]
+        }
+      }
+    },
+    "total_sales": {
+      "description": "The total sales from orders where the discount was used.",
+      "type": ["null", "object"],
+      "properties": {
+        "amount": {
+          "type": ["null", "number"]
+        },
+        "currency": {
+          "type": ["null", "string"]
+        }
+      }
+    }
+  }
+}

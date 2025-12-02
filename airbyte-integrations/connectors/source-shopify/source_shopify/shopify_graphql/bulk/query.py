@@ -3561,3 +3561,326 @@ class Return(ShopifyBulkQuery):
         for item in return_shipping_fees:
             self._process_amount_money(item)
         yield record
+
+
+class AutomaticDiscounts(ShopifyBulkQuery):
+    """
+        Output example to BULK query `automatic_discount` with `filter query` by `updated_at` sorted `ASC`:
+
+    """
+
+    query_name = "discountNodes"
+    sort_key = "UPDATED_AT"
+
+    def query(self, filter_query: Optional[str] = None) -> Query:
+        # We only need discounts where method=automatic
+        method_query = "method:'automatic'"
+        if filter_query:
+            filter_query = f"{method_query} AND {filter_query}"
+        else:
+            filter_query = f"{method_query}"
+        return super().query(filter_query)
+
+    app_discount_type_field: Field = Field(name="appDiscountType", alias="app_discount_type", fields= [
+        Field(name="app", fields=["id"]),
+        Field(name="appBridge", alias="app_bridge", fields=[
+            Field(name="createPath", alias="create_path"),
+            Field(name="detailsPath", alias="details_path"),
+        ]),
+        Field(name="appKey", alias="app_key"),
+        "description",
+        Field(name="discountClasses", alias="discount_classes"),
+        Field(name="functionId", alias="function_id"),
+        "title",
+    ])
+
+    combines_with_field: Field = Field(name="combinesWith", alias="combines_with", fields=[
+        Field(name="orderDiscounts", alias="order_discounts"),
+        Field(name="productDiscounts", alias="product_discounts"),
+        Field(name="shippingDiscounts", alias="shipping_discounts"),
+    ])
+
+    error_history_field: Field = Field(name="errorHistory", alias="error_history", fields=[
+        Field(name="errorsFirstOccurredAt", alias="errors_first_occurred_at"),
+        Field(name="firstOccurredAt", alias="first_occurred_at"),
+        Field(name="hasSharedRecentErrors", alias="has_shared_recent_errors"),
+        Field(name="hasBeenSharedSinceLastError", alias="has_been_shared_since_last_error"),
+    ])
+
+    common_fields: List[Field] = [
+        "__typename",
+        Field(name="createdAt", alias="created_at"),
+        Field(name="updatedAt", alias="updated_at"),
+        Field(name="asyncUsageCount", alias="async_usage_count"),
+        combines_with_field,
+        Field(name="discountClasses", alias="discount_classes"),
+        Field(name="endsAt", alias="ends_at"),
+        Field(name="startsAt", alias="starts_at"),
+        "status",
+        "title",
+    ]
+
+    app_fields: List[Field] = [
+        app_discount_type_field,
+        Field(name="appliesOnSubscription", alias="applies_on_subscription"),
+        Field(name="appliesOnOneTimePurchase", alias="applies_on_one_time_purchase"),
+        Field(name="discountId", alias="discount_id"),
+        Field(name="recurringCycleLimit", alias="recurring_cycle_limit"),
+        error_history_field,
+    ]
+
+    discount_items_field: Field = Field(name="items", fields=[
+        InlineFragment(type="AllDiscountItems", fields=[
+            "__typename",
+            Field(name="allItems", alias="all_items"),
+        ]),
+        InlineFragment(type="DiscountCollections", fields=[
+            "__typename",
+            Field(name="collections", fields=[
+                Field(name="edges", fields=[
+                    Field(name="node", fields=["id"])
+                ]),
+            ]),
+        ]),
+        InlineFragment(type="DiscountProducts", fields=[
+            "__typename",
+            Field(name="products", fields=[
+                Field(name="edges", fields=[
+                    Field(name="node", fields=["id"])
+                ]),
+            ]),
+            Field(name="productVariants", fields=[
+                Field(name="edges", fields=[
+                    Field(name="node", fields=["id"])
+                ]),
+            ]),
+        ]),
+    ])
+
+    amount_fields: List[Field] = [
+        "amount",
+        Field(name="currencyCode", alias="currency"),
+    ]
+
+    customer_buys_field: Field = Field(name="customerBuys", alias="customer_buys", fields=[
+        Field(name="isOneTimePurchase", alias="is_one_time_purchase"),
+        Field(name="isSubscription", alias="is_subscription"),
+        # discount_items_field,
+        # Field(name="value", fields=[
+        #     InlineFragment(type="DiscountPurchaseAmount", fields=["__typename", "amount"]),
+        #     InlineFragment(type="DiscountQuantity", fields=["__typename", "quantity"]),
+        # ]),
+    ])
+
+    discount_amount_inline_fragment: InlineFragment = InlineFragment(type="DiscountAmount", fields=[
+        "__typename",
+        Field(name="amount", fields=amount_fields),
+        Field(name="appliesOnEachItem", alias="applies_on_each_item")
+    ])
+
+    discount_percentage_inline_fragment: InlineFragment = InlineFragment(type="DiscountPercentage", fields=[
+        "__typename",
+        "percentage"
+    ])
+
+    discount_on_quantity_inline_fragment: InlineFragment = InlineFragment(type="DiscountOnQuantity", fields=[
+        "__typename",
+        Field(name="effect", fields=[
+            discount_amount_inline_fragment,
+            discount_percentage_inline_fragment,
+        ]),
+        Field(name="quantity", fields=["quantity"]),
+    ])
+
+    customer_gets_field: Field = Field(name="customerGets", alias="customer_gets", fields=[
+        Field(name="appliesOnSubscription", alias="applies_on_subscription"),
+        Field(name="appliesOnOneTimePurchase", alias="applies_on_one_time_purchase"),
+        # discount_items_field,
+        # Field(name="value", fields=[
+        #     discount_amount_inline_fragment,
+        #     discount_on_quantity_inline_fragment,
+        #     discount_percentage_inline_fragment,
+        # ]),
+    ])
+
+    bxgy_fields: List[Field] = [
+        "summary",
+        Field(name="usesPerOrderLimit", alias="uses_per_order_limit"),
+        customer_buys_field,
+        customer_gets_field,
+    ]
+
+    minimum_requirement_field: Field = Field(name="minimumRequirement", alias="minimum_requirement", fields=[
+        InlineFragment(type="DiscountMinimumQuantity", fields=[
+            "__typename",
+            Field(name="greaterThanOrEqualToQuantity", alias="greater_than_or_equal_to_quantity"),
+        ]),
+        InlineFragment(type="DiscountMinimumSubtotal", fields=[
+            "__typename",
+            Field(name="greaterThanOrEqualToSubtotal", alias="greater_than_or_equal_to_subtotal", fields=amount_fields)
+        ]),
+    ])
+
+    basic_fields: List[Field] = [
+        minimum_requirement_field,
+        Field(name="recurringCycleLimit", alias="recurring_cycle_limit"),
+        Field(name="shortSummary", alias="short_summary"),
+        "summary",
+        customer_gets_field,
+    ]
+
+    free_shipping_fields: List[Field] = [
+        Field(name="appliesOnOneTimePurchase", alias="applies_on_one_time_purchase"),
+        Field(name="appliesOnSubscription", alias="applies_on_subscription"),
+        Field(name="destinationSelection", alias="destination_selection", fields=[
+            InlineFragment(type="DiscountCountries", fields=[
+                "__typename",
+                "countries",
+                Field(name="includeRestOfWorld", alias="include_rest_of_world"),
+            ]),
+            InlineFragment(type="DiscountCountryAll", fields=[
+                "__typename",
+                Field(name="allCountries", alias="all_countries"),
+            ]),
+        ]),
+        Field(name="hasTimelineComment", alias="has_timeline_comment"),
+        Field(name="maximumShippingPrice", alias="maximum_shipping_price", fields=amount_fields),
+        minimum_requirement_field,
+        Field(name="recurringCycleLimit", alias="recurring_cycle_limit"),
+        Field(name="shortSummary", alias="short_summary"),
+        "summary",
+        Field(name="totalSales", alias="total_sales", fields=amount_fields),
+    ]
+
+    discount_inline_fields: List[Field] = [
+        InlineFragment(type="DiscountAutomaticApp", fields=common_fields + app_fields),
+        InlineFragment(type="DiscountAutomaticBxgy", fields=common_fields + bxgy_fields),
+        InlineFragment(type="DiscountAutomaticBasic", fields=common_fields + basic_fields),
+        InlineFragment(type="DiscountAutomaticFreeShipping", fields=common_fields + free_shipping_fields),
+    ]
+
+    query_nodes: List[Field] = [
+        "__typename",
+        "id",
+        Field(name="discount", fields=discount_inline_fields),
+    ]
+
+    record_composition = {
+        "new_record": "DiscountNode",
+    }
+
+
+    def record_process_components(self, record: MutableMapping[str, Any]) -> Iterable[MutableMapping[str, Any]]:
+        discount = record.get("discount", {})
+        discount_type = discount.get("__typename")
+        record["type"] = discount_type
+        record["created_at"] = self.tools.from_iso8601_to_rfc3339(discount, "created_at")
+        record["updated_at"] = self.tools.from_iso8601_to_rfc3339(discount, "updated_at")
+
+        #process common fields
+        record["async_usage_count"] = discount.get("async_usage_count")
+        record["combines_with"] = discount.get("combines_with")
+        record["discount_classes"] = discount.get("discount_classes")
+        record["ends_at"] = self.tools.from_iso8601_to_rfc3339(discount, "ends_at")
+        record["starts_at"] = self.tools.from_iso8601_to_rfc3339(discount, "starts_at")
+        record["status"] = discount.get("status")
+        record["title"] = discount.get("title")
+        discount.pop("async_usage_count")
+        discount.pop("combines_with")
+        discount.pop("discount_classes")
+        discount.pop("ends_at")
+        discount.pop("starts_at")
+        discount.pop("status")
+        discount.pop("title")
+
+        #process DiscountAutomaticApp
+        if discount_type == "DiscountAutomaticApp":
+            app_discount_type = discount.get("app_discount_type", {})
+            app_discount_type["app_id"] = self.tools.resolve_str_id(app_discount_type.get("app", {}).get("id"))
+            app_discount_type.pop("app")
+            record["app_discount_type"] = app_discount_type
+            discount.pop("app_discount_type")
+            record["applies_on_subscription"] = discount.get("applies_on_subscription")
+            record["applies_on_one_time_purchase"] = discount.get("applies_on_one_time_purchase")
+            record["discount_id"] = discount.get("discount_id")
+            record["recurring_cycle_limit"] = discount.get("recurring_cycle_limit")
+            record["error_history"] = discount.get("error_history")
+            discount.pop("applies_on_subscription")
+            discount.pop("applies_on_one_time_purchase")
+            discount.pop("discount_id")
+            discount.pop("recurring_cycle_limit")
+            discount.pop("error_history")
+
+        #process DiscountAutomaticBasic
+        if discount_type == "DiscountAutomaticBasic":
+            self.process_minimum_requirement(discount)
+            record["minimum_requirement"] = discount.get("minimum_requirement")
+            record["recurring_cycle_limit"] = discount.get("recurring_cycle_limit")
+            record["short_summary"] = discount.get("short_summary")
+            record["summary"] = discount.get("summary")
+            record["customer_gets"] = discount.get("customer_gets")
+            discount.pop("minimum_requirement")
+            discount.pop("recurring_cycle_limit")
+            discount.pop("short_summary")
+            discount.pop("summary")
+            discount.pop("customer_gets")
+
+        #process DiscountAutomaticBxgy
+        if discount_type == "DiscountAutomaticBxgy":
+            record["summary"] = discount.get("summary")
+            record["uses_per_order_limit"] = discount.get("uses_per_order_limit")
+            record["customer_buys"] = discount.get("customer_buys")
+            record["customer_gets"] = discount.get("customer_gets")
+            discount.pop("summary")
+            discount.pop("uses_per_order_limit")
+            discount.pop("customer_buys")
+            discount.pop("customer_gets")
+
+        #process DiscountAutomaticFreeShipping
+        if discount_type == "DiscountAutomaticFreeShipping":
+            record["applies_on_one_time_purchase"] = discount.get("applies_on_one_time_purchase")
+            record["applies_on_subscription"] = discount.get("applies_on_subscription")
+            record["destination_selection"] = discount.get("destination_selection")
+            record["has_timeline_comment"] = discount.get("has_timeline_comment")
+            maximum_shipping_price = discount.get("maximum_shipping_price")
+            if maximum_shipping_price:
+                amount = maximum_shipping_price.get("amount", "")
+                if amount:
+                    discount["maximum_shipping_price"]["amount"] = float(amount)
+            record["maximum_shipping_price"] = discount.get("maximum_shipping_price")
+            self.process_minimum_requirement(discount)
+            record["minimum_requirement"] = discount.get("minimum_requirement")
+            record["recurring_cycle_limit"] = discount.get("recurring_cycle_limit")
+            record["short_summary"] = discount.get("short_summary")
+            record["summary"] = discount.get("summary")
+            total_sales = discount.get("total_sales")
+            if total_sales:
+                amount = total_sales.get("amount", "")
+                if amount:
+                    discount["total_sales"]["amount"] = float(amount)
+            record["total_sales"] = discount.get("total_sales")
+            discount.pop("applies_on_one_time_purchase")
+            discount.pop("applies_on_subscription")
+            discount.pop("destination_selection")
+            discount.pop("has_timeline_comment")
+            discount.pop("maximum_shipping_price")
+            discount.pop("minimum_requirement")
+            discount.pop("recurring_cycle_limit")
+            discount.pop("short_summary")
+            discount.pop("summary")
+            discount.pop("total_sales")
+
+        record.pop("discount")
+        yield record
+
+    def process_minimum_requirement(self, discount : MutableMapping[str, Any]):
+        minimum_requirement = discount.get("minimum_requirement", {})
+        if minimum_requirement:
+            greater_than_or_equal_to_subtotal = minimum_requirement.get("greater_than_or_equal_to_subtotal", {})
+            greater_than_or_equal_to_quantity = minimum_requirement.get("greater_than_or_equal_to_quantity", "")
+            if greater_than_or_equal_to_subtotal:
+                amount = greater_than_or_equal_to_subtotal.get("amount", "")
+                if amount:
+                    discount["minimum_requirement"]["greater_than_or_equal_to_subtotal"]["amount"] = float(amount)
+            if greater_than_or_equal_to_quantity:
+                discount["minimum_requirement"]["greater_than_or_equal_to_quantity"] = int(greater_than_or_equal_to_quantity)

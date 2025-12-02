@@ -65,6 +65,7 @@ from .streams.streams import (
     TransactionsGraphql,
     GiftCards,
     Returns,
+    AutomaticDiscounts,
 )
 
 
@@ -222,6 +223,7 @@ class SourceShopify(AbstractSource):
             Countries(config=config, parent=ProfileLocationGroups(config)),
             GiftCards(config),
             Returns(config),
+            AutomaticDiscounts(config),
         ]
 
         return [

@@ -33,6 +33,7 @@ from source_shopify.shopify_graphql.bulk.query import (
     ProfileLocationGroups,
     Transaction,
     Return,
+    AutomaticDiscounts,
 )
 from source_shopify.utils import LimitReducingErrorHandler, ShopifyNonRetryableErrors
 
@@ -465,3 +466,8 @@ class Returns(IncrementalShopifyGraphQlBulkStream):
             - additional `read_users` scope is required https://shopify.dev/docs/api/usage/access-scopes#authenticated-access-scopes
         """
         return ResourceSchemaLoader(package_name_from_class(Return)).get_schema("returns")
+
+
+class AutomaticDiscounts(IncrementalShopifyGraphQlBulkStream):
+    bulk_query: AutomaticDiscounts = AutomaticDiscounts
+    api_version = "2025-10"
