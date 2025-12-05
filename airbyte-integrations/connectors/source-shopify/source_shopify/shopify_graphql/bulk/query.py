@@ -3571,10 +3571,11 @@ class AutomaticDiscounts(ShopifyBulkQuery):
 
     query_name = "discountNodes"
     sort_key = "UPDATED_AT"
+    method_name = "automatic"
 
     def query(self, filter_query: Optional[str] = None) -> Query:
         # We only need discounts where method=automatic
-        method_query = "method:'automatic'"
+        method_query = f"method:'{self.method_name}'"
         if filter_query:
             filter_query = f"{method_query} AND {filter_query}"
         else:
@@ -3773,11 +3774,106 @@ class AutomaticDiscounts(ShopifyBulkQuery):
     def record_process_components(self, record: MutableMapping[str, Any]) -> Iterable[MutableMapping[str, Any]]:
         discount = record.get("discount", {})
         discount_type = discount.get("__typename")
+
+        #process common fields
+        self.process_common_fields(discount, record, discount_type)
+
+        #process DiscountAutomaticApp
+        if discount_type == "DiscountAutomaticApp":
+            self.process_app(discount, record)
+
+        #process DiscountAutomaticBasic
+        if discount_type == "DiscountAutomaticBasic":
+            self.process_basic(discount, record)
+
+        #process DiscountAutomaticBxgy
+        if discount_type == "DiscountAutomaticBxgy":
+            self.process_bxgy(discount, record)
+
+        #process DiscountAutomaticFreeShipping
+        if discount_type == "DiscountAutomaticFreeShipping":
+            self.process_free_shipping(discount, record)
+
+        record.pop("discount")
+        yield record
+
+    def process_free_shipping(self, discount : MutableMapping[str, Any], record : MutableMapping[str, Any]):
+        record["applies_on_one_time_purchase"] = discount.get("applies_on_one_time_purchase")
+        record["applies_on_subscription"] = discount.get("applies_on_subscription")
+        record["destination_selection"] = discount.get("destination_selection")
+        record["has_timeline_comment"] = discount.get("has_timeline_comment")
+        maximum_shipping_price = discount.get("maximum_shipping_price")
+        if maximum_shipping_price:
+            amount = maximum_shipping_price.get("amount", "")
+            if amount:
+                discount["maximum_shipping_price"]["amount"] = float(amount)
+        record["maximum_shipping_price"] = discount.get("maximum_shipping_price")
+        self.process_minimum_requirement(discount)
+        record["minimum_requirement"] = discount.get("minimum_requirement")
+        record["recurring_cycle_limit"] = discount.get("recurring_cycle_limit")
+        record["short_summary"] = discount.get("short_summary")
+        record["summary"] = discount.get("summary")
+        total_sales = discount.get("total_sales")
+        if total_sales:
+            amount = total_sales.get("amount", "")
+            if amount:
+                discount["total_sales"]["amount"] = float(amount)
+        record["total_sales"] = discount.get("total_sales")
+        discount.pop("applies_on_one_time_purchase")
+        discount.pop("applies_on_subscription")
+        discount.pop("destination_selection")
+        discount.pop("has_timeline_comment")
+        discount.pop("maximum_shipping_price")
+        discount.pop("minimum_requirement")
+        discount.pop("recurring_cycle_limit")
+        discount.pop("short_summary")
+        discount.pop("summary")
+        discount.pop("total_sales")
+
+    def process_bxgy(self, discount : MutableMapping[str, Any], record : MutableMapping[str, Any]):
+        record["summary"] = discount.get("summary")
+        record["uses_per_order_limit"] = discount.get("uses_per_order_limit")
+        record["customer_buys"] = discount.get("customer_buys")
+        record["customer_gets"] = discount.get("customer_gets")
+        discount.pop("summary")
+        discount.pop("uses_per_order_limit")
+        discount.pop("customer_buys")
+        discount.pop("customer_gets")
+
+    def process_basic(self, discount : MutableMapping[str, Any], record : MutableMapping[str, Any]):
+        self.process_minimum_requirement(discount)
+        record["minimum_requirement"] = discount.get("minimum_requirement")
+        record["recurring_cycle_limit"] = discount.get("recurring_cycle_limit")
+        record["short_summary"] = discount.get("short_summary")
+        record["summary"] = discount.get("summary")
+        record["customer_gets"] = discount.get("customer_gets")
+        discount.pop("minimum_requirement")
+        discount.pop("recurring_cycle_limit")
+        discount.pop("short_summary")
+        discount.pop("summary")
+        discount.pop("customer_gets")
+
+    def process_app(self, discount : MutableMapping[str, Any], record : MutableMapping[str, Any]):
+        app_discount_type = discount.get("app_discount_type", {})
+        app_discount_type["app_id"] = self.tools.resolve_str_id(app_discount_type.get("app", {}).get("id"))
+        app_discount_type.pop("app")
+        record["app_discount_type"] = app_discount_type
+        discount.pop("app_discount_type")
+        record["applies_on_subscription"] = discount.get("applies_on_subscription")
+        record["applies_on_one_time_purchase"] = discount.get("applies_on_one_time_purchase")
+        record["discount_id"] = discount.get("discount_id")
+        record["recurring_cycle_limit"] = discount.get("recurring_cycle_limit")
+        record["error_history"] = discount.get("error_history")
+        discount.pop("applies_on_subscription")
+        discount.pop("applies_on_one_time_purchase")
+        discount.pop("discount_id")
+        discount.pop("recurring_cycle_limit")
+        discount.pop("error_history")
+
+    def process_common_fields(self, discount : MutableMapping[str, Any], record : MutableMapping[str, Any], discount_type : str):
         record["type"] = discount_type
         record["created_at"] = self.tools.from_iso8601_to_rfc3339(discount, "created_at")
         record["updated_at"] = self.tools.from_iso8601_to_rfc3339(discount, "updated_at")
-
-        #process common fields
         record["async_usage_count"] = discount.get("async_usage_count")
         record["combines_with"] = discount.get("combines_with")
         record["discount_classes"] = discount.get("discount_classes")
@@ -3793,86 +3889,6 @@ class AutomaticDiscounts(ShopifyBulkQuery):
         discount.pop("status")
         discount.pop("title")
 
-        #process DiscountAutomaticApp
-        if discount_type == "DiscountAutomaticApp":
-            app_discount_type = discount.get("app_discount_type", {})
-            app_discount_type["app_id"] = self.tools.resolve_str_id(app_discount_type.get("app", {}).get("id"))
-            app_discount_type.pop("app")
-            record["app_discount_type"] = app_discount_type
-            discount.pop("app_discount_type")
-            record["applies_on_subscription"] = discount.get("applies_on_subscription")
-            record["applies_on_one_time_purchase"] = discount.get("applies_on_one_time_purchase")
-            record["discount_id"] = discount.get("discount_id")
-            record["recurring_cycle_limit"] = discount.get("recurring_cycle_limit")
-            record["error_history"] = discount.get("error_history")
-            discount.pop("applies_on_subscription")
-            discount.pop("applies_on_one_time_purchase")
-            discount.pop("discount_id")
-            discount.pop("recurring_cycle_limit")
-            discount.pop("error_history")
-
-        #process DiscountAutomaticBasic
-        if discount_type == "DiscountAutomaticBasic":
-            self.process_minimum_requirement(discount)
-            record["minimum_requirement"] = discount.get("minimum_requirement")
-            record["recurring_cycle_limit"] = discount.get("recurring_cycle_limit")
-            record["short_summary"] = discount.get("short_summary")
-            record["summary"] = discount.get("summary")
-            record["customer_gets"] = discount.get("customer_gets")
-            discount.pop("minimum_requirement")
-            discount.pop("recurring_cycle_limit")
-            discount.pop("short_summary")
-            discount.pop("summary")
-            discount.pop("customer_gets")
-
-        #process DiscountAutomaticBxgy
-        if discount_type == "DiscountAutomaticBxgy":
-            record["summary"] = discount.get("summary")
-            record["uses_per_order_limit"] = discount.get("uses_per_order_limit")
-            record["customer_buys"] = discount.get("customer_buys")
-            record["customer_gets"] = discount.get("customer_gets")
-            discount.pop("summary")
-            discount.pop("uses_per_order_limit")
-            discount.pop("customer_buys")
-            discount.pop("customer_gets")
-
-        #process DiscountAutomaticFreeShipping
-        if discount_type == "DiscountAutomaticFreeShipping":
-            record["applies_on_one_time_purchase"] = discount.get("applies_on_one_time_purchase")
-            record["applies_on_subscription"] = discount.get("applies_on_subscription")
-            record["destination_selection"] = discount.get("destination_selection")
-            record["has_timeline_comment"] = discount.get("has_timeline_comment")
-            maximum_shipping_price = discount.get("maximum_shipping_price")
-            if maximum_shipping_price:
-                amount = maximum_shipping_price.get("amount", "")
-                if amount:
-                    discount["maximum_shipping_price"]["amount"] = float(amount)
-            record["maximum_shipping_price"] = discount.get("maximum_shipping_price")
-            self.process_minimum_requirement(discount)
-            record["minimum_requirement"] = discount.get("minimum_requirement")
-            record["recurring_cycle_limit"] = discount.get("recurring_cycle_limit")
-            record["short_summary"] = discount.get("short_summary")
-            record["summary"] = discount.get("summary")
-            total_sales = discount.get("total_sales")
-            if total_sales:
-                amount = total_sales.get("amount", "")
-                if amount:
-                    discount["total_sales"]["amount"] = float(amount)
-            record["total_sales"] = discount.get("total_sales")
-            discount.pop("applies_on_one_time_purchase")
-            discount.pop("applies_on_subscription")
-            discount.pop("destination_selection")
-            discount.pop("has_timeline_comment")
-            discount.pop("maximum_shipping_price")
-            discount.pop("minimum_requirement")
-            discount.pop("recurring_cycle_limit")
-            discount.pop("short_summary")
-            discount.pop("summary")
-            discount.pop("total_sales")
-
-        record.pop("discount")
-        yield record
-
     def process_minimum_requirement(self, discount : MutableMapping[str, Any]):
         minimum_requirement = discount.get("minimum_requirement", {})
         if minimum_requirement:
@@ -3884,3 +3900,132 @@ class AutomaticDiscounts(ShopifyBulkQuery):
                     discount["minimum_requirement"]["greater_than_or_equal_to_subtotal"]["amount"] = float(amount)
             if greater_than_or_equal_to_quantity:
                 discount["minimum_requirement"]["greater_than_or_equal_to_quantity"] = int(greater_than_or_equal_to_quantity)
+
+
+class CodeDiscounts(AutomaticDiscounts):
+
+    method_name = "code"
+
+    code_common_fields: List[Field] = [
+        Field(name="appliesOncePerCustomer", alias="applies_once_per_customer"),
+        Field(name="codesCount", alias="codes_count", fields=["precision", "count"]),
+        Field(name="codes", fields=[
+            Field(name="edges", fields=[
+                Field(name="node", fields=[
+                    "__typename",
+                    "id",
+                    "code",
+                    Field(name="asyncUsageCount", alias="async_usage_count")
+                ]),
+            ]),
+        ]),
+        Field(name="hasTimelineComment", alias="has_timeline_comment"),
+        Field(name="shareableUrls", alias="shareable_urls", fields=[
+            "url",
+            "title",
+            Field(name="targetType", alias="target_type"),
+        ]),
+        Field(name="totalSales", alias="total_sales", fields=AutomaticDiscounts.amount_fields),
+        Field(name="usageLimit", alias="usage_limit"),
+    ]
+
+    code_app_fields: List[Field] = [
+
+    ]
+
+    code_bxgy_fields: List[Field] = [
+
+    ]
+
+    code_basic_fields: List[Field] = [
+
+    ]
+
+    code_free_shipping_fields: List[Field] = [
+
+    ]
+
+    code_discount_inline_fields: List[Field] = [
+        InlineFragment(type="DiscountCodeApp", fields=AutomaticDiscounts.common_fields + code_common_fields + AutomaticDiscounts.app_fields + code_app_fields),
+        InlineFragment(type="DiscountCodeBxgy", fields=AutomaticDiscounts.common_fields + code_common_fields + AutomaticDiscounts.bxgy_fields + code_bxgy_fields),
+        InlineFragment(type="DiscountCodeBasic", fields=AutomaticDiscounts.common_fields + code_common_fields + AutomaticDiscounts.basic_fields + code_basic_fields),
+        InlineFragment(type="DiscountCodeFreeShipping", fields=AutomaticDiscounts.common_fields + code_common_fields + AutomaticDiscounts.free_shipping_fields + code_free_shipping_fields),
+    ]
+
+    query_nodes: List[Field] = [
+        "__typename",
+        "id",
+        Field(name="discount", fields=code_discount_inline_fields),
+    ]
+
+    record_composition = {
+        "new_record": "DiscountNode",
+        "record_components": [
+            "DiscountRedeemCode"
+        ]
+    }
+
+    def _process_component(self, entity: List[dict]) -> List[dict]:
+        for item in entity:
+            # remove the `__parentId` from the object
+            if BULK_PARENT_KEY in item:
+                item.pop(BULK_PARENT_KEY)
+            # resolve the id from string
+            item["id"] = self.tools.resolve_str_id(item.get("id"))
+        return entity
+
+    def process_common_code_field(self, discount : MutableMapping[str, Any], record : MutableMapping[str, Any]):
+        record["applies_once_per_customer"] = discount.get("applies_once_per_customer")
+        record["codes_count"] = discount.get("codes_count")
+        record["has_timeline_comment"] = discount.get("has_timeline_comment")
+        record["shareable_urls"] = discount.get("shareable_urls")
+        total_sales = discount.get("total_sales")
+        if total_sales:
+            amount = total_sales.get("amount", "")
+            if amount:
+                discount["total_sales"]["amount"] = float(amount)
+        record["total_sales"] = discount.get("total_sales")
+        record["usage_limit"] = discount.get("usage_limit")
+        #process_codes
+        record_components = record.get("record_components", {})
+        if record_components:
+            discount_redeem_codes = record_components.get("DiscountRedeemCode", [])
+            if discount_redeem_codes:
+                self._process_component(discount_redeem_codes)
+                record["codes"] = discount_redeem_codes
+        discount.pop("applies_once_per_customer")
+        discount.pop("codes_count")
+        discount.pop("shareable_urls")
+        discount.pop("usage_limit")
+
+
+    def record_process_components(self, record: MutableMapping[str, Any]) -> Iterable[MutableMapping[str, Any]]:
+        discount = record.get("discount", {})
+        discount_type = discount.get("__typename")
+
+        # process common code fields
+        self.process_common_code_field(discount, record)
+
+        # process common fields
+        self.process_common_fields(discount, record, discount_type)
+
+        # process DiscountCodeApp
+        if discount_type == "DiscountCodeApp":
+            self.process_app(discount, record)
+
+        # process DiscountCodeBxgy
+        if discount_type == "DiscountCodeBxgy":
+            self.process_bxgy(discount, record)
+
+        # process DiscountCodeBasic
+        if discount_type == "DiscountCodeBasic":
+            self.process_basic(discount, record)
+
+        # process DiscountCodeFreeShipping
+        if discount_type == "DiscountCodeFreeShipping":
+            self.process_free_shipping(discount, record)
+
+        record.pop("discount")
+        record.pop("record_components")
+
+        yield record

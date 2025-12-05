@@ -66,6 +66,7 @@ from .streams.streams import (
     GiftCards,
     Returns,
     AutomaticDiscounts,
+    CodeDiscounts,
 )
 
 
@@ -224,6 +225,7 @@ class SourceShopify(AbstractSource):
             GiftCards(config),
             Returns(config),
             AutomaticDiscounts(config),
+            CodeDiscounts(config),
         ]
 
         return [

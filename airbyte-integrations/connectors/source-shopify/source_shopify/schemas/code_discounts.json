@@ -7,7 +7,7 @@
       "type": ["null", "integer"]
     },
     "admin_graphql_api_id": {
-      "description": "The unique identifier of the automatic in the GraphQL Admin API.",
+      "description": "The unique identifier of the code discount in the GraphQL Admin API.",
       "type": ["null", "string"]
     },
     "type": {
@@ -247,6 +247,62 @@
           "type": ["null", "string"]
         }
       }
+    },
+    "applies_once_per_customer": {
+      "description": "Whether a customer can only use the discount once.",
+      "type": ["null", "boolean"]
+    },
+    "codes_count": {
+      "description": "The number of codes that a customer can use to redeem the discount.",
+      "type": ["null", "object"],
+      "properties": {
+        "count": {
+          "type": ["null", "integer"]
+        },
+        "precision": {
+          "type": ["null", "string"]
+        }
+      }
+    },
+    "codes": {
+      "description": "A list codes that customers can use to redeem the discount.",
+      "type": ["null", "array"],
+      "items": {
+        "type": ["null", "object"],
+        "properties": {
+          "id": {
+            "type": ["null", "integer"]
+          },
+          "code": {
+            "type": ["null", "string"]
+          },
+          "async_usage_count": {
+            "type": ["null", "string"]
+          }
+        }
+      }
+    },
+    "shareable_urls": {
+      "description": "A list of URLs that the app can use to share the discount.",
+      "type": ["null", "array"],
+      "items": {
+        "type": ["null", "object"],
+        "properties": {
+          "url": {
+            "type": ["null", "string"]
+          },
+          "title": {
+            "type": ["null", "string"]
+          },
+          "target_type": {
+            "type": ["null", "string"]
+          }
+        }
+      }
+    },
+    "usage_limit": {
+      "description": "The maximum number of times that a customer can use the discount. For discounts with unlimited usage, specify null.",
+      "type": ["null", "integer"]
     }
   }
 }

@@ -6,6 +6,10 @@
       "description": "The ID of the return.",
       "type": ["null", "integer"]
     },
+    "admin_graphql_api_id": {
+      "description": "The unique identifier of the return in the GraphQL Admin API.",
+      "type": ["null", "string"]
+    },
     "order_id": {
       "description": "The ID of the associated order.",
       "type": ["null", "integer"]
