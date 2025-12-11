@@ -153,13 +153,11 @@
         },
         "has_been_shared_since_last_error": {
           "description": "Whether the merchant has shared all the recent errors with the developer.",
-          "type": ["null", "string"],
-          "format": "date-time"
+          "type": ["null", "boolean"]
         },
         "has_shared_recent_errors": {
           "description": "Whether the merchant has shared all the recent errors with the developer.",
-          "type": ["null", "string"],
-          "format": "date-time"
+          "type": ["null", "boolean"]
         }
       }
     },
