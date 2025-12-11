@@ -137,6 +137,32 @@
       "description": "The number of billing cycles for which the discount can be applied, which is useful for subscription-based discounts. For example, if you set this field to 3, then the discount only applies to the first three billing cycles of a subscription. If you specify 0, then the discount applies indefinitely.",
       "type": ["null", "integer"]
     },
+    "error_history": {
+      "description": "The error history for the latest version of the discount type that the app provides.",
+      "type": ["null", "object"],
+      "properties": {
+        "errors_first_occurred_at": {
+          "description": "The date and time that the first error occurred.",
+          "type": ["null", "string"],
+          "format": "date-time"
+        },
+        "first_occurred_at": {
+          "description": "The date and time that the first error occurred.",
+          "type": ["null", "string"],
+          "format": "date-time"
+        },
+        "has_been_shared_since_last_error": {
+          "description": "Whether the merchant has shared all the recent errors with the developer.",
+          "type": ["null", "string"],
+          "format": "date-time"
+        },
+        "has_shared_recent_errors": {
+          "description": "Whether the merchant has shared all the recent errors with the developer.",
+          "type": ["null", "string"],
+          "format": "date-time"
+        }
+      }
+    },
     "minimum_requirement": {
       "description": "The minimum subtotal or quantity of items that are required for the discount to be applied.",
       "type": ["null", "object"],

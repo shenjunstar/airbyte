@@ -1636,6 +1636,8 @@ class FulfillmentOrder(ShopifyBulkQuery):
         "__typename",
         "id",
         "inventoryItemId",
+        "remainingQuantity",
+        "totalQuantity",
         Field(
             name="lineItem",
             fields=[
@@ -3863,7 +3865,15 @@ class AutomaticDiscounts(ShopifyBulkQuery):
         record["applies_on_one_time_purchase"] = discount.get("applies_on_one_time_purchase")
         record["discount_id"] = discount.get("discount_id")
         record["recurring_cycle_limit"] = discount.get("recurring_cycle_limit")
-        record["error_history"] = discount.get("error_history")
+        error_history = discount.get("error_history")
+        if error_history:
+            errors_first_occurred_at = error_history.get("errors_first_occurred_at")
+            if errors_first_occurred_at:
+                error_history["errors_first_occurred_at"] = self.tools.from_iso8601_to_rfc3339(error_history, "errors_first_occurred_at")
+            first_occurred_at = error_history.get("first_occurred_at")
+            if first_occurred_at:
+                error_history["first_occurred_at"] = self.tools.from_iso8601_to_rfc3339(error_history, "first_occurred_at")
+        record["error_history"] = error_history
         discount.pop("applies_on_subscription")
         discount.pop("applies_on_one_time_purchase")
         discount.pop("discount_id")
@@ -4029,3 +4039,155 @@ class CodeDiscounts(AutomaticDiscounts):
         record.pop("record_components")
 
         yield record
+
+
+class FulfillmentOrderV2(FulfillmentOrder):
+
+    query_name = "fulfillmentOrders"
+
+    events_field: Field = Field(name="events", fields=[
+        Field(name="edges", fields=[
+            Field(name="node", fields=[
+                "__typename",
+                "id",
+                "address1",
+                "city",
+                "country",
+                "createdAt",
+                "estimatedDeliveryAt",
+                "happenedAt",
+                "latitude",
+                "longitude",
+                "message",
+                "province",
+                "status",
+                "zip",
+            ])
+        ])
+    ])
+
+    fulfillments_fields: List[Field] = [
+        Field(name="edges", fields=[
+            Field(name="node", fields=[
+                "__typename",
+                "id",
+                events_field,
+            ])
+        ])
+    ]
+
+    query_nodes: List[Field] = FulfillmentOrder.fulfillment_order_fields + [
+        "orderId",
+        Field(name="fulfillments", fields=fulfillments_fields),
+    ]
+
+    record_composition = {
+        "new_record": "FulfillmentOrder",
+        # each FulfillmentOrder has multiple `FulfillmentOrderLineItem` and `FulfillmentOrderMerchantRequest`
+        "record_components": [
+            "FulfillmentOrderLineItem",
+            "FulfillmentOrderMerchantRequest",
+            "FulfillmentEvent",
+        ],
+    }
+
+    def process_fulfillment_events(self, record: MutableMapping[str, Any]) -> MutableMapping[str, Any]:
+        fulfillment_id = record.get(BULK_PARENT_KEY, "")
+        if fulfillment_id:
+            record["fulfillmentId"] = self.tools.resolve_str_id(fulfillment_id)
+        # cleaning
+        record.pop(BULK_PARENT_KEY)
+        # resolve ids from `str` to `int`
+        record["id"] = self.tools.resolve_str_id(record.get("id"))
+        record["createdAt"] = self.tools.from_iso8601_to_rfc3339(record, "createdAt")
+        record["estimatedDeliveryAt"] = self.tools.from_iso8601_to_rfc3339(record, "estimatedDeliveryAt")
+        record["happenedAt"] = self.tools.from_iso8601_to_rfc3339(record, "happenedAt")
+        # field names to snake case
+        record = self.tools.fields_names_to_snake_case(record)
+        return record
+
+    def process_fulfillment_order(self, record: MutableMapping[str, Any], shop_id: int) -> MutableMapping[str, Any]:
+        # addings
+        record["shop_id"] = shop_id
+        record["order_id"] = record.get("orderId")
+        # unnest nested locationId to the `assignedLocation`
+        location_id = record.get("assignedLocation", {}).get("location", {}).get("locationId")
+        record["assignedLocation"]["locationId"] = location_id
+        record["assigned_location_id"] = location_id
+        # create nested placeholders for other parts
+        record["line_items"] = []
+        record["merchant_requests"] = []
+        record.get("assignedLocation").pop("location", None)
+        # resolve ids from `str` to `int`
+        # location id
+        location = record.get("assignedLocation", {})
+        if location:
+            location_id = location.get("locationId")
+            if location_id:
+                record["assignedLocation"]["locationId"] = self.tools.resolve_str_id(location_id)
+        # assigned_location_id
+        record["assigned_location_id"] = self.tools.resolve_str_id(record.get("assigned_location_id"))
+        # destination id
+        destination = record.get("destination", {})
+        if destination:
+            destination_id = destination.get("id")
+            if destination_id:
+                record["destination"]["id"] = self.tools.resolve_str_id(destination_id)
+        # delivery method id
+        delivery_method = record.get("deliveryMethod", {})
+        if delivery_method:
+            delivery_method_id = delivery_method.get("id")
+            if delivery_method_id:
+                record["deliveryMethod"]["id"] = self.tools.resolve_str_id(delivery_method_id)
+        # order id
+        record["order_id"] = self.tools.resolve_str_id(record.get("order_id"))
+        # field names to snake for nested objects
+        # `assignedLocation`(object) field names to snake case
+        record["assignedLocation"] = self.tools.fields_names_to_snake_case(record.get("assignedLocation"))
+        # `deliveryMethod`(object) field names to snake case
+        record["deliveryMethod"] = self.tools.fields_names_to_snake_case(record.get("deliveryMethod"))
+        # `destination`(object) field names to snake case
+        record["destination"] = self.tools.fields_names_to_snake_case(record.get("destination"))
+        # `fulfillmentHolds`(list[object]) field names to snake case
+        record["fulfillment_holds"] = [self.tools.fields_names_to_snake_case(el) for el in record.get("fulfillment_holds", [])]
+        # `supportedActions`(list[object]) field names to snake case
+        record["supported_actions"] = [self.tools.fields_names_to_snake_case(el) for el in record.get("supported_actions", [])]
+        return record
+
+    def record_process_components(self, record: MutableMapping[str, Any]) -> Iterable[MutableMapping[str, Any]]:
+        """
+        Defines how to process collected components.
+        """
+
+        record = self.process_fulfillment_order(record, self.shop_id)
+        record_components = record.get("record_components", {})
+        record["fulfillment_events"] = []
+        if record_components:
+            line_items = record_components.get("FulfillmentOrderLineItem", [])
+            if len(line_items) > 0:
+                for line_item in line_items:
+                    record["line_items"].append(self.process_line_item(line_item, self.shop_id))
+            merchant_requests = record_components.get("FulfillmentOrderMerchantRequest", [])
+            if len(merchant_requests) > 0:
+                for merchant_request in merchant_requests:
+                    record["merchant_requests"].append(self.process_merchant_request(merchant_request))
+            fulfillment_events = record_components.get("FulfillmentEvent", [])
+            if len(fulfillment_events) > 0:
+                for fulfillment_event in fulfillment_events:
+                    record["fulfillment_events"].append(self.process_fulfillment_events(fulfillment_event))
+            record.pop("record_components")
+        # convert dates from ISO-8601 to RFC-3339
+        record["fulfillAt"] = self.tools.from_iso8601_to_rfc3339(record, "fulfillAt")
+        record["createdAt"] = self.tools.from_iso8601_to_rfc3339(record, "createdAt")
+        record["updatedAt"] = self.tools.from_iso8601_to_rfc3339(record, "updatedAt")
+        # delivery method
+        delivery_method = record.get("deliveryMethod", {})
+        if delivery_method:
+            record["deliveryMethod"]["min_delivery_date_time"] = self.tools.from_iso8601_to_rfc3339(
+                delivery_method, "min_delivery_date_time"
+            )
+            record["deliveryMethod"]["max_delivery_date_time"] = self.tools.from_iso8601_to_rfc3339(
+                delivery_method, "max_delivery_date_time"
+            )
+        yield record
+

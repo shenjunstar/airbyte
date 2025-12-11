@@ -35,6 +35,7 @@ from source_shopify.shopify_graphql.bulk.query import (
     Return,
     AutomaticDiscounts,
     CodeDiscounts,
+    FulfillmentOrderV2,
 )
 from source_shopify.utils import LimitReducingErrorHandler, ShopifyNonRetryableErrors
 
@@ -476,4 +477,9 @@ class AutomaticDiscounts(IncrementalShopifyGraphQlBulkStream):
 
 class CodeDiscounts(IncrementalShopifyGraphQlBulkStream):
     bulk_query: CodeDiscounts = CodeDiscounts
+    api_version = "2025-10"
+
+
+class FulfillmentOrdersV2(IncrementalShopifyGraphQlBulkStream):
+    bulk_query: FulfillmentOrderV2 = FulfillmentOrderV2
     api_version = "2025-10"

@@ -66,6 +66,7 @@ SCOPES_MAPPING: Mapping[str, set[str]] = {
     "InventoryLevels": ("read_inventory",),
     # SCOPE: read_merchant_managed_fulfillment_orders
     "FulfillmentOrders": ("read_merchant_managed_fulfillment_orders",),
+    "FulfillmentOrdersV2": ("read_assigned_fulfillment_orders", "read_merchant_managed_fulfillment_orders", "read_third_party_fulfillment_orders"),
     # SCOPE: read_shopify_payments_payouts
     "BalanceTransactions": ("read_shopify_payments_payouts",),
     "Disputes": ("read_shopify_payments_payouts",),

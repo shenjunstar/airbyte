@@ -67,6 +67,7 @@ from .streams.streams import (
     Returns,
     AutomaticDiscounts,
     CodeDiscounts,
+    FulfillmentOrdersV2,
 )
 
 
@@ -226,6 +227,7 @@ class SourceShopify(AbstractSource):
             Returns(config),
             AutomaticDiscounts(config),
             CodeDiscounts(config),
+            FulfillmentOrdersV2(config),
         ]
 
         return [
