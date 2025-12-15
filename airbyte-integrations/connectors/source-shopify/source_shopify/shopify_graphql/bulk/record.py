@@ -333,7 +333,7 @@ class ShopifyBulkRecord:
             MutableMapping[str, Any]: A dictionary representing a processed record with field names in snake_case.
         """
 
-        with open(filename, "r") as jsonl_file:
+        with open(filename, "r", encoding="utf-8") as jsonl_file:
             # reset the counter
             self.record_composed = 0
 

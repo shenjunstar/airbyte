@@ -2079,6 +2079,13 @@ class Product(ShopifyBulkQuery):
                         id
                         values
                         position
+                        optionValues {
+                            __typename
+                            id
+                            hasVariants
+                            name
+                            linkedMetafieldValue
+                        }
                     }
                     handle
                     images {
@@ -2188,6 +2195,22 @@ class Product(ShopifyBulkQuery):
     # variants property fields, we re-use the same field names as for the `images` property
     variants_fields: List[Field] = images_fields
 
+    # product option fields
+    product_option_values_fields: List[Field] = [
+        "id",
+        "name",
+        Field(name="hasVariants", alias="has_variants"),
+        Field(name="linkedMetafieldValue", alias="linked_metafield_value"),
+    ]
+
+    product_options_fields: List[Field] = [
+        "id",
+        "name",
+        "values",
+        "position",
+        Field(name="optionValues", alias="option_values", fields=product_option_values_fields),
+    ]
+
     amount_fields: List[Field] = [
         "amount",
         Field(name="currencyCode", alias="currency_code"),
@@ -2259,7 +2282,8 @@ class Product(ShopifyBulkQuery):
         Field(name="feedback", fields=feedback_fields),
         Field(name="variantsCount", alias="total_variants", fields=[Field(name="count", alias="total_variants")]),
         Field(name="mediaCount", alias="media_count", fields=[Field(name="count", alias="media_count")]),
-        Field(name="options", fields=["id", "name", "values", "position"]),
+        # Field(name="options", fields=["id", "name", "values", "position"]),
+        Field(name="options", fields=product_options_fields),
         Field(name="images", fields=images_fields),
         Field(name="variants", fields=variants_fields),
     ]
@@ -2283,7 +2307,16 @@ class Product(ShopifyBulkQuery):
         for option in options:
             # add product_id to each option
             option["product_id"] = product_id if product_id else None
+            option["option_values"] = self._process_option_values(option.get("option_values", []), option.get("id"))
         return options
+
+    def _process_option_values(self, option_values: List[dict], product_option_id: Optional[int] = None) -> List[dict]:
+        for option_value in option_values:
+            # resolve the id from string
+            option_value["id"] = self.tools.resolve_str_id(option_value.get("id"))
+            # add product_option_id to each option_value
+            option_value["product_option_id"] = product_option_id if product_option_id else None
+        return option_values
 
     def _unnest_tags(self, record: MutableMapping[str, Any]) -> Optional[str]:
         # we keep supporting 1 tag only, as it was for the REST stream,
