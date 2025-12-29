@@ -232,6 +232,23 @@
     "tracked": {
       "description": "Whether inventory levels are tracked for the item.",
       "type": ["null", "boolean"]
+    },
+    "media": {
+      "description": "The media associated with the product variant.",
+      "type": ["null", "array"],
+      "items": {
+        "type": ["null", "object"],
+        "properties": {
+          "id": {
+            "description": "The unique id of the media associated with the product variant.",
+            "type": ["null", "integer"]
+          },
+          "media_content_type": {
+            "description": "The media content type.",
+            "type": ["null", "string"]
+          }
+        }
+      }
     }
   }
 }

@@ -2698,6 +2698,15 @@ class ProductVariant(ShopifyBulkQuery):
             Field(name="requiresShipping", alias="requires_shipping"),
             Field(name="measurement", alias="measurement", fields=measurement_fields),
         ]
+        media_field = Field(name="media", fields=[
+            Field(name="edges", fields=[
+                Field(name="node", fields=[
+                    "__typename",
+                    "id",
+                    Field(name="mediaContentType", alias="media_content_type")
+                ])
+            ]),
+        ])
         query_nodes: List[Field] = [
             "__typename",
             "id",
@@ -2720,6 +2729,7 @@ class ProductVariant(ShopifyBulkQuery):
             Field(name="inventoryQuantity", alias="old_inventory_quantity"),
             Field(name="product", fields=[Field(name="id", alias="product_id")]),
             Field(name="inventoryItem", fields=inventory_item_fields),
+            media_field,
         ] + presentment_prices
 
         return query_nodes
@@ -2727,7 +2737,7 @@ class ProductVariant(ShopifyBulkQuery):
     record_composition = {
         "new_record": "ProductVariant",
         # each `ProductVariant` could have `ProductVariantPricePair` associated with the product variant.
-        "record_components": ["ProductVariantPricePair"],
+        "record_components": ["ProductVariantPricePair", "MediaImage"],
     }
 
     def _process_presentment_prices(self, entity: List[dict]) -> List[dict]:
@@ -2775,6 +2785,13 @@ class ProductVariant(ShopifyBulkQuery):
         # process record components
         if record_components:
             record["presentment_prices"] = self._process_presentment_prices(record_components.get("ProductVariantPricePair", []))
+            media_list = record_components.get("MediaImage", [])
+            if media_list:
+                for media in media_list:
+                    if BULK_PARENT_KEY in media:
+                        media.pop(BULK_PARENT_KEY)
+                    media["id"] = self.tools.resolve_str_id(media.get("id", "0"))
+            record["media"] = media_list
             record.pop("record_components")
 
         # unnest mandatory fields from their placeholders
