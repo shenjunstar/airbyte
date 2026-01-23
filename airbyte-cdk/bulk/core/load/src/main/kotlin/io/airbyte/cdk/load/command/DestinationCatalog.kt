@@ -1,12 +1,11 @@
 /*
- * Copyright (c) 2024 Airbyte, Inc., all rights reserved.
+ * Copyright (c) 2026 Airbyte, Inc., all rights reserved.
  */
 
 package io.airbyte.cdk.load.command
 
 import io.airbyte.cdk.ConfigErrorException
 import io.airbyte.cdk.Operation
-import io.airbyte.cdk.load.config.CHECK_STREAM_NAMESPACE
 import io.airbyte.cdk.load.data.FieldType
 import io.airbyte.cdk.load.data.IntegerType
 import io.airbyte.cdk.load.data.ObjectType
@@ -104,17 +103,22 @@ class DefaultDestinationCatalogFactory {
         catalog: ConfiguredAirbyteCatalog,
         streamFactory: DestinationStreamFactory,
         tableNameResolver: TableNameResolver,
+        namespaceMapper: NamespaceMapper,
     ): DestinationCatalog {
-        val descriptors =
-            catalog.streams
-                .map { DestinationStream.Descriptor(it.stream.namespace, it.stream.name) }
-                .toSet()
-        val names = tableNameResolver.getTableNameMapping(descriptors)
+        // we resolve the table names with the properly mapped descriptors
+        val mappedDescriptors =
+            catalog.streams.map { namespaceMapper.map(it.stream.namespace, it.stream.name) }.toSet()
+        val names = tableNameResolver.getTableNameMapping(mappedDescriptors)
+
+        require(
+            names.size == catalog.streams.size,
+            { "Invariant violation: An incomplete table name mapping was generated." }
+        )
 
         return DestinationCatalog(
             streams =
                 catalog.streams.map {
-                    val key = DestinationStream.Descriptor(it.stream.namespace, it.stream.name)
+                    val key = namespaceMapper.map(it.stream.namespace, it.stream.name)
                     streamFactory.make(it, names[key]!!)
                 }
         )
@@ -137,7 +141,7 @@ class DefaultDestinationCatalogFactory {
         val date = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"))
         // generate 5 random characters
         val random = RandomStringUtils.insecure().nextAlphabetic(5).lowercase()
-        val namespace = checkNamespace ?: "${CHECK_STREAM_NAMESPACE}_$date$random"
+        val namespace = checkNamespace ?: "airbyte_internal_test_$date$random"
         return DestinationCatalog(
             listOf(
                 DestinationStream(
